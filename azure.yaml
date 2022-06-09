@@ -1,0 +1,57 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Load VNet information
+      ansible.builtin.include_vars:
+        file: vnets.yaml
+      tags: new
+
+    - name: "Create Resource Group (contoso)"
+      azure.azcollection.azure_rm_resourcegroup:
+        name: Contoso
+        location: centralindia
+        tags:
+          cloud-rg: cloud-rg
+
+    - name: "Create VNets"
+      azure.azcollection.azure_rm_virtualnetwork:
+        resource_group: "{{ item.resource_group }}"
+        name: "{{ item.name }}"
+        location: "{{ item.location }}"
+        address_prefixes_cidr: "{{ item.address_prefixes_cidr }}"
+      loop: "{{ vnets }}"
+    
+    - name: "Create subnets"
+      azure.azcollection.azure_rm_subnet:
+        resource_group: "Contoso"
+        virtual_network_name: "{{ item.0.name }}"
+        address_prefix_cidr: "{{ item.1.address_prefix_cidr }}"
+        name: "{{ item.1.name }}"
+      loop: "{{ vnets|subelements('subnets') }}"
+    
+    - name: "Create Private DNS Zone"
+      azure.azcollection.azure_rm_privatednszone:
+        resource_group: Contoso
+        name: contoso.com
+    
+    - name: "Link subnet for auto-registration"
+      azure.azcollection.azure_rm_privatednszonelink:
+        resource_group: Contoso
+        zone_name: contoso.com
+        name: "{{ item.name|lower + 'link' }}"
+        virtual_network: "{{ item.name }}"
+        registration_enabled: true
+      loop: "{{ vnets }}"
+    
+    - name: "Configure VNet Peering"
+      azure.azcollection.azure_rm_virtualnetworkpeering:
+        resource_group: Contoso
+        name: "{{ item.1.name }}"
+        virtual_network: "{{ item.0.name }}"
+        remote_virtual_network: 
+          resource_group: "{{ item.1.remote_virtual_network.resource_group }}"
+          name: "{{ item.1.remote_virtual_network.name }}"
+        allow_forwarded_traffic: "{{ item.1.allow_forwarded_traffic }}"
+        allow_virtual_network_access: "{{ item.1.allow_virtual_network_access }}"
+      loop: "{{ vnets|subelements('peerings', skip_missing=True) }}"

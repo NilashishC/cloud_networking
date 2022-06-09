@@ -1,0 +1,51 @@
+---
+vnets:
+  - name: CoreServicesVnet
+    resource_group: Contoso
+    location: eastus2
+    address_prefixes_cidr: 10.20.0.0/16
+    subnets:
+      - name: GatewaySubnet
+        address_prefix_cidr: 10.20.0.0/27
+      - name: SharedServicesSubnet
+        address_prefix_cidr: 10.20.10.0/24
+      - name: DatabaseSubnet
+        address_prefix_cidr: 10.20.20.0/24
+      - name: PublicWebServiceSubnet
+        address_prefix_cidr: 10.20.30.0/24
+    peerings:
+      - name: CoreServicesVnet-to-ManufacturingVnet
+        remote_virtual_network: 
+          resource_group: Contoso
+          name: ManufacturingVnet
+        allow_forwarded_traffic: true
+        allow_virtual_network_access: true
+
+  - name: ManufacturingVnet
+    resource_group: Contoso
+    location: westeurope
+    address_prefixes_cidr: 10.30.0.0/16
+    subnets:
+      - name: ManufacturingSystemSubnet
+        address_prefix_cidr: 10.30.10.0/24
+      - name: SensorSubnet1
+        address_prefix_cidr: 10.30.20.0/24
+      - name: SensorSubnet2
+        address_prefix_cidr: 10.30.21.0/24
+      - name: SensorSubnet3
+        address_prefix_cidr: 10.30.22.0/24
+    peerings:
+      - name: ManufacturingVnet-to-CoreServicesVnet
+        remote_virtual_network: 
+          resource_group: Contoso
+          name: CoreServicesVnet
+        allow_forwarded_traffic: true
+        allow_virtual_network_access: true
+  
+  - name: ResearchVnet
+    resource_group: Contoso
+    location: southeastasia
+    address_prefixes_cidr: 10.40.0.0/16
+    subnets:
+      - name: ResearchSystemSubnet
+        address_prefix_cidr: 10.40.0.0/24
